@@ -20,6 +20,18 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     job_description = request.form.get('job_description', '')
+    jd_file = request.files.get('jd_file')
+
+    if jd_file and jd_file.filename != '':
+        try:
+            if jd_file.filename.lower().endswith('.pdf'):
+                from engine import extract_text_from_pdf_stream
+                import io
+                job_description = extract_text_from_pdf_stream(io.BytesIO(jd_file.read()))
+            else:
+                job_description = jd_file.read().decode('utf-8', errors='ignore')
+        except Exception as e:
+            return jsonify({'error': f'Failed to read JD file: {str(e)}'}), 400
 
     if 'resumes' not in request.files:
         return jsonify({'error': 'No resumes uploaded'}), 400

@@ -18,8 +18,10 @@
             <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
                 
                 <div class="form-group">
-                    <label for="job_description">Job Description</label>
-                    <textarea id="job_description" name="job_description" placeholder="Paste the full job description here... (skills, requirements, experience needed)" required></textarea>
+                    <label for="job_description">Job Description (Type OR Upload File)</label>
+                    <textarea id="job_description" name="job_description" placeholder="Paste the full job description here... (skills, requirements, experience needed)"></textarea>
+                    <div style="margin-top: 10px; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-align: center;">— OR —</div>
+                    <input type="file" id="jd_file" name="jd_file" accept=".txt,.pdf" style="width: 100%; border: 2px dashed var(--border-color); padding: 10px; border-radius: 8px; color: var(--text-muted); background: rgba(255,255,255,0.5);">
                 </div>
 
                 <div class="form-group">
@@ -124,6 +126,15 @@
         });
 
         form.addEventListener('submit', function(e) {
+            const jdText = document.getElementById('job_description').value.trim();
+            const jdFile = document.getElementById('jd_file').files.length;
+            
+            if (!jdText && jdFile === 0) {
+                e.preventDefault();
+                alert('Please provide a Job Description (either type it or upload a .txt/.pdf file)');
+                return;
+            }
+
             if (allFiles.length === 0) {
                 e.preventDefault();
                 alert('Please select at least one resume');
