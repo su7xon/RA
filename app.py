@@ -24,10 +24,34 @@ def upload():
 
     if jd_file and jd_file.filename != '':
         try:
-            if jd_file.filename.lower().endswith('.pdf'):
+            filename_lower = jd_file.filename.lower()
+            if filename_lower.endswith('.pdf'):
                 from engine import extract_text_from_pdf_stream
                 import io
                 job_description = extract_text_from_pdf_stream(io.BytesIO(jd_file.read()))
+            elif filename_lower.endswith('.xlsx'):
+                import openpyxl
+                import io
+                wb = openpyxl.load_workbook(io.BytesIO(jd_file.read()), data_only=True)
+                jd_lines = []
+                for sheet in wb.sheetnames:
+                    ws = wb[sheet]
+                    for row in ws.iter_rows(values_only=True):
+                        row_text = ' '.join([str(cell) for cell in row if cell is not None])
+                        if row_text.strip():
+                            jd_lines.append(row_text)
+                job_description = "\n".join(jd_lines)
+            elif filename_lower.endswith('.csv'):
+                import csv
+                import io
+                stream = io.StringIO(jd_file.read().decode('utf-8', errors='ignore'))
+                reader = csv.reader(stream)
+                jd_lines = []
+                for row in reader:
+                    row_text = ' '.join([str(cell) for cell in row if cell is not None])
+                    if row_text.strip():
+                        jd_lines.append(row_text)
+                job_description = "\n".join(jd_lines)
             else:
                 job_description = jd_file.read().decode('utf-8', errors='ignore')
         except Exception as e:
