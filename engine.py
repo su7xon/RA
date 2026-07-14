@@ -15,7 +15,11 @@ from groq import Groq
 
 GROQ_KEYS = []
 if os.getenv("GROQ_API_KEY"):
-    GROQ_KEYS.append(os.getenv("GROQ_API_KEY"))
+    # Allow multiple keys separated by comma
+    keys = os.getenv("GROQ_API_KEY").split(',')
+    for k in keys:
+        if k.strip():
+            GROQ_KEYS.append(k.strip())
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
 groq_clients = [Groq(api_key=key) for key in GROQ_KEYS if key]
