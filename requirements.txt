@@ -1,0 +1,10 @@
+Flask
+PyPDF2
+pymupdf
+spacy
+scikit-learn
+sentence-transformers
+python-dotenv
+groq
+google-generativeai
+markupsafe

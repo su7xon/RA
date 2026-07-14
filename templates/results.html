@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Comparison</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .container { max-width: 98% !important; margin: 2rem auto !important; padding: 0 1rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95rem; }
+        .back-link:hover { color: var(--primary-color); }
+
+        /* Comparison Table */
+        .comparison-table { width: 100%; border-collapse: collapse; background: var(--panel-bg); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+        .comparison-table th { background: var(--primary-color); color: white; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .comparison-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; vertical-align: top; line-height: 1.3; }
+        .comparison-table tr:hover { background: rgba(37,99,235,0.03); }
+        .comparison-table tr:last-child td { border-bottom: none; }
+
+        /* Individual Candidate Cards */
+        .candidates-section { margin-top: 2rem; }
+        .candidates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        .candidate-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .candidate-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1); }
+        .candidate-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--border-color); }
+        .candidate-name { font-size: 1.05rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.25rem; word-break: break-all; }
+        .candidate-rank { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: white; font-weight: 700; font-size: 0.9rem; }
+        .score-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem; margin-top: 0.5rem; }
+        .score-high { background: #f0fdf4; color: #166534; }
+        .score-medium { background: #fef9c3; color: #854d0e; }
+        .score-low { background: #fef2f2; color: #991b1b; }
+        .recommendation-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 0.5rem; }
+        .rec-strong-hire { background: #f0fdf4; color: #166534; }
+        .rec-hire { background: #f0f9ff; color: #0369a1; }
+        .rec-maybe { background: #fef9c3; color: #854d0e; }
+        .rec-reject { background: #fef2f2; color: #991b1b; }
+        .rec-na { background: #f3f4f6; color: #6b7280; }
+
+        .candidate-details { display: grid; gap: 0.8rem; }
+        .detail-row { display: flex; align-items: baseline; gap: 0.5rem; }
+        .detail-label { font-weight: 600; color: var(--text-muted); font-size: 0.85rem; min-width: 120px; }
+        .detail-value { color: var(--text-color); font-size: 0.9rem; }
+        .detail-value.description { font-style: italic; color: var(--text-muted); }
+
+        .skills-section { margin-top: 1rem; }
+        .skills-title { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .skills-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .skill-label { font-weight: 600; color: var(--text-muted); font-size: 0.85rem; min-width: 80px; }
+        .skill-tag { display: inline-block; background: rgba(37,99,235,0.1); color: var(--accent-color); padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; margin: 2px; }
+        .skill-tag.empty { background: #f3f4f6; color: #9ca3af; font-style: italic; }
+        .rating-bar { display: flex; align-items: center; gap: 0.5rem; margin-top: 2px; }
+        .rating-bar .bar { width: 100px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+        .rating-bar .bar-fill { height: 100%; background: var(--accent-color); border-radius: 3px; transition: width 0.3s ease; }
+        .rating-text { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+
+        .keywords-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+        .keywords-title { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .kw-tag { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; margin: 2px; }
+        .kw-tag.matched { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .kw-tag.missing { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .ai-explanation { margin-top: 1rem; padding: 0.75rem; background: #f8fafc; border-left: 4px solid var(--accent-color); border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+        .ai-explanation strong { color: var(--primary-color); }
+
+        /* No Resumes */
+        .no-resumes { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+
+        /* Question Bank */
+        .question-bank { margin-top: 40px; padding: 2rem; background: var(--panel-bg); border-radius: var(--radius-lg); }
+        .question-bank h2 { margin-bottom: 20px; color: var(--primary-color); }
+        .question-controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .generate-btn { padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+        .generate-btn:hover { background: var(--primary-hover); }
+        .regenerate-btn { padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+        .regenerate-btn:hover { background: #dc2626; }
+        .questions-display { margin-top: 20px; }
+        .question-category { margin-bottom: 30px; }
+        .question-category h3 { color: var(--primary-color); margin-bottom: 15px; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; }
+        .difficulty-group { margin-bottom: 15px; }
+        .difficulty-group h4 { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; }
+        .question-item { background: rgba(37,99,235,0.05); padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; font-size: 0.95rem; }
+        .question-item.easy { }
+        .question-item.medium { }
+        .question-item.hard { }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header><h1>Resume Analysis</h1></header>
+        <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Analyze New Batch</a>
+
+        {% if candidates %}
+
+        <!-- Comparison Table -->
+        <div class="comparison-section">
+            <h2 style="color: var(--primary-color); margin-bottom: 1rem;"><i class="fa-solid fa-table-columns"></i> Quick Comparison</h2>
+            <div style="overflow-x: auto;">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Experience</th>
+                            <th>Frontend</th>
+                            <th>Backend</th>
+                            <th>DevOps</th>
+                            <th>Database</th>
+                            <th>Cloud</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in candidates %}
+                        <tr>
+                            <td>
+                                <strong>{{ candidate.filename }}</strong><br>
+                                <span class="score-badge {{ 'score-high' if candidate.display_score >= 70 else 'score-medium' if candidate.display_score >= 40 else 'score-low' }}" style="margin-top: 5px; display: inline-block;">
+                                    {{ candidate.display_score }}/100
+                                </span>
+                            </td>
+                            <td style="font-size: 0.8rem;">{{ candidate.brief_description }}</td>
+                            <td style="white-space: nowrap;">{{ candidate.experience_years }}</td>
+                            <td>
+                                {% for skill in candidate.frontend %}<span class="skill-tag">{{ skill }}</span>{% else %}<span class="skill-tag empty">None</span>{% endfor %}
+                            </td>
+                            <td>
+                                {% for skill in candidate.backend %}<span class="skill-tag">{{ skill }}</span>{% else %}<span class="skill-tag empty">None</span>{% endfor %}
+                            </td>
+                            <td>
+                                {% for skill in candidate.devops %}<span class="skill-tag">{{ skill }}</span>{% else %}<span class="skill-tag empty">None</span>{% endfor %}
+                            </td>
+                            <td>
+                                {% for skill in candidate.database %}<span class="skill-tag">{{ skill }}</span>{% else %}<span class="skill-tag empty">None</span>{% endfor %}
+                            </td>
+                            <td>
+                                {% for skill in candidate.cloud %}<span class="skill-tag">{{ skill }}</span>{% else %}<span class="skill-tag empty">None</span>{% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Individual Candidate Cards -->
+        <div class="candidates-section">
+            <h2 style="color: var(--primary-color); margin-bottom: 1rem;"><i class="fa-solid fa-id-card"></i> Candidate Details</h2>
+            <div class="candidates-grid">
+                {% for candidate in candidates %}
+                <div class="candidate-card">
+                    <div class="candidate-header">
+                        <div>
+                            <div class="candidate-name">{{ candidate.filename }}</div>
+                            <div class="score-badge {{ 'score-high' if candidate.display_score >= 70 else 'score-medium' if candidate.display_score >= 40 else 'score-low' }}">
+                                Score: {{ candidate.display_score }}/100
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="candidate-rank">{{ loop.index }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Rank</div>
+                        </div>
+                    </div>
+
+                    <div class="candidate-details">
+                        <!-- Removed Description -->
+                        <!-- Removed Experience -->
+                        <div class="detail-row">
+                            <span class="detail-label">Analysis:</span>
+                            <span class="detail-value">{{ "AI Powered" if candidate.ai_source != 'Local NLP (No AI)' else "Local NLP" }}</span>
+                        </div>
+
+                        <!-- Removed Skills Breakdown -->
+
+                        <!-- Skills -->
+                        <div class="skills-section">
+                            <div class="skills-title">Skills</div>
+                            <div>
+                                {% set all_skills = (candidate.frontend + candidate.backend + candidate.database + candidate.devops + candidate.cloud + candidate.other_skills) %}
+                                {% for skill in all_skills %}<span class="skill-tag">{{ skill }}</span>{% else %}<span class="skill-tag empty">None listed</span>{% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- JD Match -->
+                        <div class="keywords-section">
+                            <div class="keywords-title">JD Match Analysis</div>
+                            <div style="margin-bottom: 0.5rem;"><strong style="color: var(--text-muted); font-size: 0.8rem;">Matched:</strong></div>
+                            <div>{% for kw in candidate.matched_keywords %}<span class="kw-tag matched">{{ kw }}</span>{% else %}<span class="kw-tag">None</span>{% endfor %}</div>
+                            <div style="margin-top: 0.5rem; margin-bottom: 0.5rem;"><strong style="color: var(--text-muted); font-size: 0.8rem;">Missing:</strong></div>
+                            <div>{% for kw in candidate.missing_keywords %}<span class="kw-tag missing">{{ kw }}</span>{% else %}<span class="kw-tag matched">None</span>{% endfor %}</div>
+                        </div>
+
+                        <!-- AI Explanation -->
+                        <div class="ai-explanation">
+                            <strong>AI Assessment:</strong> {{ candidate.explanation }}
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                            Recommendation: <span class="recommendation-badge
+                                {% if 'Strong Hire' in candidate.recommendation %}rec-strong-hire
+                                {% elif 'Hire' in candidate.recommendation %}rec-hire
+                                {% elif 'Maybe' in candidate.recommendation %}rec-maybe
+                                {% elif 'Reject' in candidate.recommendation %}rec-reject
+                                {% else %}rec-na{% endif %}">
+                                {{ candidate.recommendation }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Question Bank -->
+        <div class="question-bank">
+            <h2><i class="fa-solid fa-graduation-cap"></i> Question Bank</h2>
+            <p style="color: var(--text-muted); margin-bottom: 15px;">Generate interview questions based on candidate's skills</p>
+            <div class="question-controls">
+                <button class="generate-btn" id="generateBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Questions</button>
+                <button class="regenerate-btn" id="regenerateBtn" style="display: none;"><i class="fa-solid fa-rotate"></i> Regenerate</button>
+            </div>
+            <div class="questions-display" id="questionsDisplay"></div>
+        </div>
+
+        {% else %}
+        <div class="no-resumes"><i class="fa-solid fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; color: #475569;"></i><p>No valid candidates found or processing failed.</p></div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Collect all unique skills from all candidates
+        const allSkills = [];
+        {% for candidate in candidates %}
+        allSkills.push(...{{ (candidate.frontend + candidate.backend + candidate.database + candidate.devops + candidate.cloud) | tojson }});
+        {% endfor %}
+        // Remove duplicates
+        const uniqueSkills = [...new Set(allSkills)];
+
+        const generateBtn = document.getElementById('generateBtn');
+        const regenerateBtn = document.getElementById('regenerateBtn');
+        const questionsDisplay = document.getElementById('questionsDisplay');
+
+        function generateQuestions() {
+            generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+            fetch('/generate-questions', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({skills: uniqueSkills})
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayQuestions(data.questions);
+                generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Questions';
+                generateBtn.style.display = 'none';
+                regenerateBtn.style.display = 'inline-block';
+            })
+            .catch(err => {
+                questionsDisplay.innerHTML = '<p style="color: #ef4444;">Error generating questions. Please try again.</p>';
+                console.error(err);
+            });
+        }
+
+        function displayQuestions(questions) {
+            if (!questions) return;
+            let html = '';
+            const categories = {
+                'frontend': 'Frontend',
+                'backend': 'Backend',
+                'database': 'Database',
+                'devops': 'DevOps',
+                'cloud': 'Cloud'
+            };
+
+            for (let [cat, label] of Object.entries(categories)) {
+                if (questions[cat]) {
+                    html += '<div class="question-category">';
+                    html += '<h3>' + label + '</h3>';
+                    html += '<div class="difficulty-group">';
+                    html += '<h4>Easy</h4>';
+                    questions[cat].easy.forEach(q => { html += '<div class="question-item easy">' + q + '</div>'; });
+                    html += '</div>';
+                    html += '<div class="difficulty-group">';
+                    html += '<h4>Medium</h4>';
+                    questions[cat].medium.forEach(q => { html += '<div class="question-item medium">' + q + '</div>'; });
+                    html += '</div>';
+                    html += '<div class="difficulty-group">';
+                    html += '<h4>Hard</h4>';
+                    questions[cat].hard.forEach(q => { html += '<div class="question-item hard">' + q + '</div>'; });
+                    html += '</div>';
+                    html += '</div>';
+                }
+            }
+            questionsDisplay.innerHTML = html || '<p>No questions available.</p>';
+        }
+
+        generateBtn.addEventListener('click', generateQuestions);
+        regenerateBtn.addEventListener('click', generateQuestions);
+    </script>
+</body>
+</html>

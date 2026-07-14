@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Shortlisting</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="home-page">
+    <div class="container">
+        <header>
+            <h1>AI Recruiter</h1>
+            
+        </header>
+
+        <main class="glass-panel">
+            <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+                
+                <div class="form-group">
+                    <label for="job_description">Job Description</label>
+                    <textarea id="job_description" name="job_description" placeholder="Paste the full job description here... (skills, requirements, experience needed)" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Candidate Resumes (PDFs) - Max 4</label>
+                    <div class="file-upload-wrapper" id="dropZone">
+                        <input type="file" id="resumes" name="resumes" accept="application/pdf" multiple required>
+                        <div class="upload-content">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <div class="upload-text">Drag & drop PDFs here or <span>browse files</span></div>
+                        </div>
+                    </div>
+                    <div class="file-list" id="fileList">No files selected</div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Analyze Candidates
+                </button>
+
+                <div class="loader-wrapper" id="loader">
+                    <div class="spinner"></div>
+                    <p>Analyzing resumes using AI... This may take a few moments.</p>
+                </div>
+
+            </form>
+        </main>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('resumes');
+        const fileList = document.getElementById('fileList');
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loader = document.getElementById('loader');
+
+        let allFiles = [];
+        const MAX_FILES = 4;
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight() {
+            dropZone.classList.remove('dragover');
+        }
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function addFiles(newFiles) {
+            for (let f of newFiles) {
+                let exists = allFiles.some(existing => existing.name === f.name && existing.size === f.size);
+                if (!exists) allFiles.push(f);
+            }
+            if (allFiles.length > MAX_FILES) {
+                allFiles = allFiles.slice(0, MAX_FILES);
+                alert('Only first 4 resumes will be processed');
+            }
+            updateInputAndDisplay();
+        }
+
+        function updateInputAndDisplay() {
+            const dt = new DataTransfer();
+            allFiles.forEach(f => dt.items.add(f));
+            fileInput.files = dt.files;
+
+            if (allFiles.length === 0) {
+                fileList.textContent = "No files selected";
+                fileList.style.color = "#94a3b8";
+            } else if (allFiles.length > 4) {
+                fileList.textContent = "Max 4 resumes allowed!";
+                fileList.style.color = "#ef4444";
+            } else {
+                fileList.textContent = allFiles.map(f => f.name).join(', ');
+                fileList.style.color = "#94a3b8";
+            }
+        }
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            addFiles(Array.from(dt.files));
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        fileInput.addEventListener('change', function() {
+            addFiles(Array.from(fileInput.files));
+        });
+
+        form.addEventListener('submit', function(e) {
+            if (allFiles.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one resume');
+                return;
+            }
+            if (allFiles.length > 4) {
+                e.preventDefault();
+                alert('Please select maximum 4 resumes');
+                return;
+            }
+            submitBtn.style.display = 'none';
+            loader.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
